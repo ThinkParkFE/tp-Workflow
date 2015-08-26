@@ -1,0 +1,30 @@
+{
+  "name": "",
+  "description": "",
+  "version": "1.0.0",
+  "license": "none",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-autoprefixer": "*",
+    "grunt-cdnify": "*",
+    "grunt-contrib-clean": "*",
+    "grunt-contrib-concat": "*",
+    "grunt-contrib-copy": "*",
+    "grunt-contrib-cssmin": "*",
+    "grunt-contrib-htmlmin": "*",
+    "grunt-contrib-less": "*",
+    "grunt-contrib-uglify": "*",
+    "grunt-contrib-watch": "*",
+    "grunt-tp-manifest": "*",
+    "grunt-usemin": "*",
+    "load-grunt-tasks": "*",
+    "time-grunt": "*"
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  }
+}
