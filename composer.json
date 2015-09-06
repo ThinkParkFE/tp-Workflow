@@ -1,0 +1,7 @@
+{
+  "name" : "socialpark",
+  "require" : {
+    "leaps/httpclient": "^1.4",
+    "thinkpark/notorm":"^1.0"
+  }
+}
