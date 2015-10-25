@@ -12,7 +12,7 @@ $(function () {
             $("#pc_jump").hide();
         }
     });
-    //tp.tongji.init("f0cc40d30453a7067a353fa82a36f456");
+    //tp.tongji("f0cc40d30453a7067a353fa82a36f456");
     tp.wx.init({
         title: "social park",
         desc: "social park。",

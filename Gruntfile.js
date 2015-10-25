@@ -27,7 +27,7 @@ module.exports = function (grunt) {
                     'assets/fonts/*.ttf',
                     'lib/**',
                     'favicon.ico',
-                    'index.html'
+                    'index.{html.php}'
                 ],
                 dest: distPath,
                 filter: 'isFile'
@@ -153,11 +153,20 @@ module.exports = function (grunt) {
                         dest: distPath + 'assets/js/zepto.min.js'
                     },
                     {
-                        src: ["bower_components/tp.motion/pc-prompt.min.js", "bower_components/tp.motion/landscape.min.js", "bower_components/tp.motion/page-slide.min.js"],
+                        src: [
+                            "bower_components/tp.motion/pc-prompt.min.js",
+                            "bower_components/tp.motion/landscape.min.js",
+                            "bower_components/tp.motion/slide.min.js"
+                        ],
                         dest: distPath + 'assets/js/motion.min.js'
                     },
                     {
-                        src: ['bower_components/tp/js/share.js', 'bower_components/tp/js/statistics.js', 'bower_components/tp/js/audioCtrl.js', 'app/assets/js/app.js'],
+                        src: [
+                            'bower_components/tp/js/share.js',
+                            'bower_components/tp/js/statistics.js',
+                            'bower_components/tp/js/audioCtrl.js',
+                            'app/assets/js/app.js'
+                        ],
                         dest: '.tmp/concat/assets/js/app.min.js'
                     }
                 ]
@@ -177,17 +186,22 @@ module.exports = function (grunt) {
                     expand: false,
                     src: distPath + 'index.html',
                     dest: distPath + 'index.html'
-                }]
+                },
+                    {
+                        expand: false,
+                        src: distPath + 'index.php',
+                        dest: distPath + 'index.php'
+                    }]
             }
         },
         useminPrepare: {
-            html: distPath + 'index.html',
+            html: distPath + 'index.{html,php}',
             options: {
                 dest: distPath
             }
         },
         usemin: {
-            html: distPath + 'index.html',
+            html: distPath + 'index.{html,php}',
             options: {
                 //blockReplacements: {
                 //    css: function (block) {
@@ -211,7 +225,7 @@ module.exports = function (grunt) {
                     preferOnline: false,
                     verbose: true,
                     timestamp: true,
-                    prefixer: "/reporterinvite/dist/"
+                    prefixer: distPath
                 },
                 src: [
                     "**/*.*"
