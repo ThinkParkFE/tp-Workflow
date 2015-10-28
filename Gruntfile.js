@@ -43,7 +43,10 @@ module.exports = function (grunt) {
         less: {
             development: {
                 options:{
-                    relativeUrls:true
+                    relativeUrls:true,
+                    strictImports : true,
+                    sourceMap: true,
+                    sourceMapFilename:"app.css.map"
                 },
                 files: {
                     'app/assets/css/app.css':'app/assets/less/app.less'
