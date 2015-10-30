@@ -63,8 +63,11 @@ module.exports = function (grunt) {
         },
         cssmin: {
             options: {
+                keepSpecialComments:true,
                 shorthandCompacting: false,
-                roundingPrecision: -1
+                advanced           : false,
+                roundingPrecision  : -1,
+                noAdvanced         : true //取消高级特性
             },
 
             build: {
