@@ -15,7 +15,7 @@ var gulp = require('gulp'),
     copy = require('gulp-copy'),
     imagemin = require('gulp-imagemin'),
     pngquant = require('imagemin-pngquant'),
-    clean = require('gulp-clean'),
+    del = require('del'),
     cdn = require('gulp-cdn-replace'),
     manifest = require('gulp-manifest'),
     useref = require('gulp-useref'),
@@ -31,9 +31,8 @@ var config = {
 
 
 ///清空图片、样式、js
-gulp.task('clean', function () {
-    return gulp.src(config.distPath + '/', {read: false})
-        .pipe(clean());
+gulp.task('del', function () {
+    return del([ config.distPath]);
 });
 
 //离线缓存
@@ -153,6 +152,6 @@ gulp.task('js-css-merger', function () {
 
 gulp.task('default', ['less', 'watch']); //定义默认任务
 
-gulp.task('dist-cdn', ['copy', 'images', 'js-css-merger', 'cdn', 'manifest']); //项目定义dist-cdn压缩任务
+gulp.task('dist-cdn', ['del','copy', 'images', 'js-css-merger', 'cdn', 'manifest']); //项目定义dist-cdn压缩任务
 
-gulp.task('dist', ['copy', 'images', 'js-css-merger', 'manifest']); //项目dist压缩任务
+gulp.task('dist', ['del','copy', 'images', 'js-css-merger', 'manifest']); //项目dist压缩任务
