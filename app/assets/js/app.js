@@ -12,12 +12,14 @@ $(function () {
             $("#pc_jump").hide();
         }
     });
-    //tp.tongji("f0cc40d30453a7067a353fa82a36f456");
+
     tp.wx.init({
         title: "social park",
         desc: "social park。",
         link: "http://www.socialpark.com.cn/",
         imgUrl: "http://www.socialpark.com.cn/favicon.ico"
     });
+
+    //tp.tongji(");
 
 });
