@@ -114,7 +114,7 @@ gulp.task('images', function () {
 gulp.task('less', function () {
     gulp.src(config.appPath + 'assets/less/app.less')
         .pipe(less())
-        .pipe(gulp.dest(config.appPath + 'assets/css'))
+        .pipe(gulp.dest(config.appPath + 'assets/styles'))
         .pipe(livereload())
 
         //根据设置浏览器版本自动处理浏览器前缀
@@ -124,7 +124,7 @@ gulp.task('less', function () {
             remove: false //是否去掉不必要的前缀 默认：true
         }))
 
-        .pipe(gulp.dest(config.appPath + 'assets/css'));
+        .pipe(gulp.dest(config.appPath + 'assets/styles'));
 });
 
 
