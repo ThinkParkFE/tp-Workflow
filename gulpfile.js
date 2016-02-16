@@ -1,7 +1,7 @@
 /*
-*
-* authors by 储涛 on 15/12/7.
-*/
+ *
+ * authors by 储涛 on 15/12/7.
+ */
 
 //引入插件
 var gulp = require('gulp'),
@@ -10,7 +10,6 @@ var gulp = require('gulp'),
     uglify = require('gulp-uglify'),
     concat = require('gulp-concat'),
     minifyCss = require('gulp-minify-css'),
-    autoprefixer = require('gulp-autoprefixer'),
     livereload = require('gulp-livereload'),
     copy = require('gulp-copy'),
     imagemin = require('gulp-imagemin'),
@@ -19,12 +18,17 @@ var gulp = require('gulp'),
     cdn = require('gulp-cdn-replace'),
     manifest = require('gulp-manifest'),
     useref = require('gulp-useref'),
-    gulpif = require('gulp-if');
+    gulpif = require('gulp-if'),
+    postcss = require('gulp-postcss'),
+    sourcemaps = require('gulp-sourcemaps'),
+    autoprefixer = require('autoprefixer'),
+    revReplace = require('gulp-rev-replace'),
+    rev = require('gulp-rev');
 
 //默认配置
 var config = {
     distPath: 'dist/',
-    appPath: 'app/',
+    appPath: 'src/',
     default: '',
     cdn: 'http://images-menma-me.b0.upaiyun.com/yxh.realty.menma.me/microloushu/'
 };
@@ -32,7 +36,7 @@ var config = {
 
 ///清空图片、样式、js
 gulp.task('del', function () {
-    return del([ config.distPath]);
+    return del([config.distPath]);
 });
 
 //离线缓存
@@ -82,6 +86,7 @@ gulp.task('watch', function () {
 //文件拷贝
 gulp.task('copy', function () {
     //配置需要copy的文件
+    //del([config.distPath]);
     return gulp.src(config.appPath + 'favicon.ico')
         .pipe(gulp.dest(config.distPath + '/'));
 });
@@ -100,31 +105,32 @@ gulp.task('copy', function () {
 
 //图片压缩
 gulp.task('images', function () {
-    gulp.src(config.appPath + 'assets/images/**')
+    return gulp.src(config.appPath + 'assets/images/**')
         .pipe(imagemin({
             progressive: true,
             svgoPlugins: [{removeViewBox: false}],
             use: [pngquant()]
         }))
         .pipe(gulp.dest(config.distPath + '/assets/images/'));
+
 });
 
 
 //Less编译
 gulp.task('less', function () {
-    gulp.src(config.appPath + 'assets/less/app.less')
+
+    return gulp.src(config.appPath + 'assets/less/app.less')
+        .pipe(sourcemaps.init())
         .pipe(less())
-        .pipe(gulp.dest(config.appPath + 'assets/styles'))
+        //.pipe(gulp.dest(config.appPath + 'assets/styles'))
         .pipe(livereload())
 
         //根据设置浏览器版本自动处理浏览器前缀
-        .pipe(autoprefixer({
-            browsers: ['last 2 versions'],
-            cascade: true, //是否美化属性值 默认：true 像这样：
-            remove: false //是否去掉不必要的前缀 默认：true
-        }))
+        .pipe(postcss([autoprefixer({browsers: ["> 0%"]})]))
+        .pipe(sourcemaps.write('.'))
 
         .pipe(gulp.dest(config.appPath + 'assets/styles'));
+
 });
 
 
@@ -142,16 +148,46 @@ gulp.task('js-css-merger', function () {
         minifyCSS: false//压缩页面CSS
     };
 
+
     return gulp.src(config.appPath + '/*.html')
-        .pipe(useref())
+
+        .pipe(useref({
+            cdnjs: function (a, b) {
+                return '<script src="' + b + '"></script>';
+
+            },
+            cdncss: function (a, b) {
+
+                return '<link  rel="stylesheet" href="' + b + '">';
+
+            },
+            transformPath: function (filePath) {
+                var _filePath = filePath.split("?")
+                if (_filePath.length > 1) {
+                    return _filePath[0];
+                }
+                return filePath;
+            }
+        }))
+
         .pipe(gulpif('*.js', uglify()))
-        .pipe(gulpif('*.css', minifyCss()))
+        .pipe(gulpif('*.js', rev()))
+        .pipe(gulpif('*.css', rev()))
+        .pipe(gulpif('*.css', minifyCss({
+            compatibility: "ie8,ie9,+selectors.ie7Hack,+properties.zeroUnits,+properties.urlQuotes,+properties.iePrefixHack"
+        })))
         .pipe(gulpif('*.html', htmlmin(options)))
-        .pipe(gulp.dest(config.distPath + '/'))
+        .pipe(revReplace())
+        //.pipe(revAll.revision())
+        .pipe(gulp.dest(config.distPath))
 });
 
-gulp.task('default', ['less', 'watch']); //定义默认任务
 
-gulp.task('dist-cdn', ['del','copy', 'images', 'js-css-merger', 'cdn', 'manifest']); //项目定义dist-cdn压缩任务
+gulp.task('dist', gulp.series('del', 'copy', 'images', 'js-css-merger'));
 
-gulp.task('dist', ['del','copy', 'images', 'js-css-merger', 'manifest']); //项目dist压缩任务
+
+//gulp.task('default', ['less', 'watch']); //定义默认任务
+
+//gulp.task('dist-cdn', ['del', 'copy', 'images', 'js-css-merger', 'cdn', 'manifest']); //项目定义dist-cdn压缩任务
+//
+//gulp.task('dist', [ 'copy', 'images', 'js-css-merger','js','css']); //项目dist压缩任务
