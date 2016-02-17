@@ -15,7 +15,7 @@ var gulp = require('gulp'),
     imagemin = require('gulp-imagemin'),
     pngquant = require('imagemin-pngquant'),
     del = require('del'),
-    cdn = require('gulp-cdn-replace'),
+    cdn = require('gulp-cdn'),
     manifest = require('gulp-manifest'),
     useref = require('gulp-useref'),
     gulpif = require('gulp-if'),
@@ -29,12 +29,11 @@ var gulp = require('gulp'),
 var config = {
     distPath: 'dist/',
     appPath: 'src/',
-    default: '',
-    cdn: 'http://images-menma-me.b0.upaiyun.com/yxh.realty.menma.me/microloushu/'
+    cdn: 'http://images.menma.me/yxh.realty.menma.me/microloushu/'
 };
 
 
-///清空图片、样式、js
+//清空图片、样式、js
 gulp.task('del', function () {
     return del([config.distPath]);
 });
@@ -56,20 +55,6 @@ gulp.task('manifest', function () {
             exclude: 'appcache.manifest'
         }))
         .pipe(gulp.dest(config.distPath + '/'));
-});
-
-
-//cdn
-gulp.task('cdn', function () {
-    gulp.src(config.appPath + '/*.html')
-        .pipe(cdn({
-            dir: config.appPath + '/',
-            root: {
-                js: config.cdn,
-                css: config.cdn
-            }
-        }))
-        .pipe(gulp.dest(config.appPath + '/'));
 });
 
 
@@ -148,7 +133,6 @@ gulp.task('js-css-merger', function () {
         minifyCSS: false//压缩页面CSS
     };
 
-
     return gulp.src(config.appPath + '/*.html')
 
         .pipe(useref({
@@ -162,6 +146,7 @@ gulp.task('js-css-merger', function () {
 
             },
             transformPath: function (filePath) {
+                //console.log(filePath);
                 var _filePath = filePath.split("?")
                 if (_filePath.length > 1) {
                     return _filePath[0];
@@ -178,16 +163,95 @@ gulp.task('js-css-merger', function () {
         })))
         .pipe(gulpif('*.html', htmlmin(options)))
         .pipe(revReplace())
-        //.pipe(revAll.revision())
         .pipe(gulp.dest(config.distPath))
 });
 
 
-gulp.task('dist', gulp.series('del', 'copy', 'images', 'js-css-merger'));
+//cdn 任务
+gulp.task('js-css-merger-cdn', function () {
 
+    var options = {
+        removeComments: true,//清除HTML注释
+        collapseWhitespace: true,//压缩HTML
+        collapseBooleanAttributes: true,//省略布尔属性的值
+        removeEmptyAttributes: true,//删除所有空格作属性值
+        removeScriptTypeAttributes: true,//删除<script>的type="text/javascript"
+        removeStyleLinkTypeAttributes: true,//删除<style>和<link>的type="text/css"
+        minifyJS: false,//压缩页面JS
+        minifyCSS: false//压缩页面CSS
+    };
 
-//gulp.task('default', ['less', 'watch']); //定义默认任务
+    return gulp.src(config.appPath + '/test.html')
 
-//gulp.task('dist-cdn', ['del', 'copy', 'images', 'js-css-merger', 'cdn', 'manifest']); //项目定义dist-cdn压缩任务
+        .pipe(useref({
+            cdnjs: function (a, b) {
+                return '<script src="' + b + '"></script>';
+
+            },
+            cdncss: function (a, b) {
+
+                return '<link  rel="stylesheet" href="' + b + '">';
+
+            },
+            transformPath: function (filePath) {
+                console.log(filePath);
+                var _filePath = filePath.split("?")
+                if (_filePath.length > 1) {
+                    return _filePath[0];
+                }
+                return filePath;
+            }
+        }))
+
+        .pipe(gulpif('*.js', uglify()))
+        .pipe(gulpif('*.js', rev()))
+        .pipe(gulpif('*.css', rev()))
+        .pipe(gulpif('*.css', minifyCss({
+            compatibility: "ie8,ie9,+selectors.ie7Hack,+properties.zeroUnits,+properties.urlQuotes,+properties.iePrefixHack"
+        })))
+        .pipe(gulpif('test.html', htmlmin(options)))
+        .pipe(revReplace())
+        .pipe(gulp.dest(config.distPath))
+});
+
+//配置自动上传至七牛
+//const qiniu_options = {
+//    accessKey: 'xxx',
+//    secretKey: 'xxx',
+//    bucket: 'xxx',
+//    domain: 'http://xxx.com'
+//};
 //
-//gulp.task('dist', [ 'copy', 'images', 'js-css-merger','js','css']); //项目dist压缩任务
+//
+//gulp.task('publish-js', function () {
+//    return gulp.src(['./build/js/*.js'])
+//        .pipe(uglify())
+//        .pipe(rev())
+//        .pipe(gulp.dest('./build/js'))
+//        .pipe(qn({
+//            qiniu: qiniu_options,
+//            prefix: 'js'
+//        }))
+//        .pipe(rev.manifest())
+//        .pipe(gulp.dest('./build/rev/js'));
+//});
+
+
+//配置cdn
+gulp.task('cdn', function () {
+    return gulp.src(config.distPath + "test.html")
+
+        .pipe(cdn({
+            domain: "assets/",
+            cdn: "http://cdn.socialpark.com.cn/"
+        }))
+
+        .pipe(gulp.dest(config.distPath + "/"))
+});
+
+gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger-cdn', 'cdn'));
+// cdn路径替换
+
+gulp.task('dist', gulp.series('del', 'copy', 'images', 'js-css-merger'));//生成dist目录
+
+gulp.task('default', gulp.series(['less', 'watch'])); //定义默认任务
