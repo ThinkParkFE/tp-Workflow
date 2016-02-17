@@ -16,19 +16,27 @@ var gulp = require('gulp'),
     pngquant = require('imagemin-pngquant'),
     del = require('del'),
     cdn = require('gulp-cdn'),
-    manifest = require('gulp-manifest'),
     useref = require('gulp-useref'),
     gulpif = require('gulp-if'),
     postcss = require('gulp-postcss'),
     sourcemaps = require('gulp-sourcemaps'),
     autoprefixer = require('autoprefixer'),
     revReplace = require('gulp-rev-replace'),
+    qn = require('gulp-qn'),
+    pi = require('gulp-load-plugins')(),
     rev = require('gulp-rev');
 
 //默认配置
 var config = {
     distPath: 'dist/',
     appPath: 'src/',
+    less: 'src/assets/less/*.less',
+    cssPath: 'src/assets/styles/',
+    qncss: 'dist/assets/styles/*.css',
+    qnjs: 'dist/assets/scripts/*.js',
+    qnimages: 'dist/assets/images/*.**',
+    qnaduio: 'dist/assets/audio/*.mp3',
+    qnmedia: 'dist/assets/media/*.mp4',
     cdn: 'http://images.menma.me/yxh.realty.menma.me/microloushu/'
 };
 
@@ -38,55 +46,12 @@ gulp.task('del', function () {
     return del([config.distPath]);
 });
 
-//离线缓存
-gulp.task('manifest', function () {
-    gulp.src([
-            "*.ico",
-            config.distPath + 'assets/**/*.*'
-        ], {base: './'})
-        .pipe(manifest({
-            cache: ["http://res.wx.qq.com/open/js/jweixin-1.0.0.js"],
-            hash: true,
-            preferOnline: false,
-            network: ['*'],
-            verbose: true,
-            timestamp: true,
-            filename: 'appcache.manifest',
-            exclude: 'appcache.manifest'
-        }))
-        .pipe(gulp.dest(config.distPath + '/'));
-});
-
-
-//livereload浏览器同步刷新
-gulp.task('watch', function () {
-    livereload.listen();
-    gulp.watch(config.appPath + '/**/*.*', function (event) {
-        livereload.changed(event.path);
-    });
-    gulp.watch(config.appPath + 'assets/less/*.less', ['less']);
-});
-
 
 //文件拷贝
 gulp.task('copy', function () {
-    //配置需要copy的文件
-    //del([config.distPath]);
     return gulp.src(config.appPath + 'favicon.ico')
         .pipe(gulp.dest(config.distPath + '/'));
 });
-
-
-//配置copy多个文件但是路径不一样可这样配置
-//gulp.task('list', ['copy'], function () {
-
-//    return gulp.src([
-//            config.appPath+'/tongji.php',
-//            config.appPath+'/favicon.ico'
-//    ])
-//        .pipe(gulp.dest(config.distPath + '/'));
-//});
-
 
 //图片压缩
 gulp.task('images', function () {
@@ -101,20 +66,25 @@ gulp.task('images', function () {
 });
 
 
-//Less编译
+//监控任务
+gulp.task('watch', function () {
+    livereload.listen();
+    gulp.watch(config.appPath + '/**/*.*', function (event) {
+        livereload.changed(event.path);
+    });
+    gulp.watch(config.less, gulp.series('less'));
+});
+
+
+//编译less
 gulp.task('less', function () {
-
-    return gulp.src(config.appPath + 'assets/less/app.less')
-        .pipe(sourcemaps.init())
-        .pipe(less())
-        //.pipe(gulp.dest(config.appPath + 'assets/styles'))
-        .pipe(livereload())
-
-        //根据设置浏览器版本自动处理浏览器前缀
-        .pipe(postcss([autoprefixer({browsers: ["> 0%"]})]))
-        .pipe(sourcemaps.write('.'))
-
-        .pipe(gulp.dest(config.appPath + 'assets/styles'));
+    return gulp.src(config.less).
+    pipe(sourcemaps.init()).//生成maps文件
+    pipe(pi.less()).//编译less
+    pipe(postcss([autoprefixer({browsers: ["> 0%"]})])).//自动添加浏览器前缀
+    pipe(sourcemaps.write('.')).//生成maps文件目录
+    pipe(gulp.dest(config.cssPath)).//生成的css目录
+    pipe(pi.livereload());//浏览器自动刷新
 
 });
 
@@ -214,44 +184,63 @@ gulp.task('js-css-merger-cdn', function () {
         .pipe(gulp.dest(config.distPath))
 });
 
-//配置自动上传至七牛
-//const qiniu_options = {
-//    accessKey: 'xxx',
-//    secretKey: 'xxx',
-//    bucket: 'xxx',
-//    domain: 'http://xxx.com'
-//};
-//
-//
-//gulp.task('publish-js', function () {
-//    return gulp.src(['./build/js/*.js'])
-//        .pipe(uglify())
-//        .pipe(rev())
-//        .pipe(gulp.dest('./build/js'))
-//        .pipe(qn({
-//            qiniu: qiniu_options,
-//            prefix: 'js'
-//        }))
-//        .pipe(rev.manifest())
-//        .pipe(gulp.dest('./build/rev/js'));
-//});
+var qiniu = "";
 
 
-//配置cdn
-gulp.task('cdn', function () {
-    return gulp.src(config.distPath + "test.html")
+//上传至七牛
+gulp.task('push-qn', function () {
+
+    qiniu = {
+        accessKey: '5URrS0k6NPfCuHyrXkPO9d2JnJpJvWd39kwQkShj',
+        secretKey: '8lTSOgmvBNe8kaBo_8ngBLdGYyPvqcilfBN42MB9',
+        bucket: 'test',
+        origin: 'http://7xqypv.com1.z0.glb.clouddn.com'
+    };
+
+    return gulp.src([
+            config.qncss,
+            config.qnjs,
+            config.qnimages,
+            config.qnaduio,
+            config.qnmedia
+        ])
+
+        .pipe(qn({
+            qiniu: qiniu
+            //prefix: 'test'
+        }))
 
         .pipe(cdn({
-            domain: "assets/",
-            cdn: "http://cdn.socialpark.com.cn/"
+            domain: "assets/styles/",
+            cdn: qiniu.origin
+        }))
+});
+
+
+//替换静态cdn
+gulp.task('qn-cdn', function () {
+
+    return gulp.src(config.distPath + [
+                '*.html'
+            ])
+
+        .pipe(cdn({
+            domain: "assets",
+            cdn: qiniu.origin
         }))
 
         .pipe(gulp.dest(config.distPath + "/"))
 });
 
-gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger-cdn', 'cdn'));
-// cdn路径替换
 
+//上传七牛替换远程cdn
+gulp.task('qn', gulp.series('push-qn', 'qn-cdn'));
+
+// cdn路径替换
+gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger-cdn', 'cdn'));
+
+//生成dist任务
 gulp.task('dist', gulp.series('del', 'copy', 'images', 'js-css-merger'));//生成dist目录
 
-gulp.task('default', gulp.series(['less', 'watch'])); //定义默认任务
+//默认任务
+gulp.task('default', gulp.parallel('less', 'watch')); //定义默认任务
