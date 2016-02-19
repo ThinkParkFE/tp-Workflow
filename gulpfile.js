@@ -1,6 +1,6 @@
 /*
  *
- * authors by 储涛 on 15/12/7.
+ * authors by 储涛 on 15/12/7
  */
 
 //引入插件
@@ -8,6 +8,7 @@ var gulp = require('gulp'),
     less = require('gulp-less'),
     htmlmin = require('gulp-htmlmin'),
     uglify = require('gulp-uglify'),
+    concat = require('gulp-concat'),
     minifyCss = require('gulp-minify-css'),
     livereload = require('gulp-livereload'),
     copy = require('gulp-copy'),
@@ -19,9 +20,10 @@ var gulp = require('gulp'),
     gulpif = require('gulp-if'),
     postcss = require('gulp-postcss'),
     sourcemaps = require('gulp-sourcemaps'),
-    autoprefixer = require('gulp-autoprefixer'),
+    autoprefixer = require('autoprefixer'),
     revReplace = require('gulp-rev-replace'),
     qn = require('gulp-qn'),
+    upyunDest = require('gulp-upyun').upyunSrc,
     pi = require('gulp-load-plugins')(),
     rev = require('gulp-rev');
 
@@ -36,7 +38,7 @@ var config = {
     qnimages: 'dist/assets/images/*.**',
     qnaduio: 'dist/assets/audio/*.mp3',
     qnmedia: 'dist/assets/media/*.mp4',
-    cdn: 'http://images.menma.me/yxh.realty.menma.me/microloushu/'
+    cdn: 'http://images.menma.me/yxh.realty.menma.me/microloushu/assets/'
 };
 
 
@@ -61,33 +63,29 @@ gulp.task('images', function () {
             use: [pngquant()]
         }))
         .pipe(gulp.dest(config.distPath + '/assets/images/'));
-
 });
 
 
 //监控任务
-
 gulp.task('watch', function () {
-    //livereload.listen();
+    //pi.livereload.listen();
     gulp.watch(config.appPath + '/**/*.*', function (event) {
         livereload.changed(event.path);
     });
     gulp.watch(config.less, gulp.series('less'));
 });
 
+
+
 //编译less
 gulp.task('less', function () {
     return gulp.src(config.less)
         .pipe(sourcemaps.init())//生成maps文件
         .pipe(pi.less())//编译less
-        .pipe(autoprefixer({
-            browsers: ['last 2 versions'],
-            cascade: false
-        }))
-        //.pipe(postcss([autoprefixer({browsers: ["> 0%"]})]))//自动添加浏览器前缀
+        .pipe(postcss([autoprefixer({browsers: ["> 0%"]})]))//自动添加浏览器前缀
         .pipe(sourcemaps.write('.'))//生成maps文件目录
         .pipe(gulp.dest(config.cssPath))//生成的css目录
-        .pipe(pi.livereload());//浏览器自动刷新
+        .pipe(pi.livereload());
 });
 
 
@@ -218,7 +216,6 @@ gulp.task('push-qn', function () {
         }))
 });
 
-
 //替换静态cdn
 gulp.task('qn-cdn', function () {
 
@@ -234,16 +231,53 @@ gulp.task('qn-cdn', function () {
         .pipe(gulp.dest(config.distPath + "/"))
 });
 
+//cdn加速
+gulp.task('cdn-html', function () {
+    return gulp.src([
+            config.distPath + "*.html"
+        ])
+        .pipe(cdn({
+            domain: "assets/",
+            cdn: config.cdn
+        }))
+        .pipe(gulp.dest(config.distPath + "/"))
+});
+
+
+gulp.task('cdn-css', function () {
+    return gulp.src([
+            config.distPath + "assets/styles/*.css"
+        ])
+        .pipe(cdn({
+            domain: "../images/",
+            cdn: config.cdn
+        }))
+        .pipe(gulp.dest(config.distPath + "assets/styles/"))
+});
+
+
+//gulp.task('upyun-upload', function () {
+//
+//    var folderOnUpyun = 'test/';
+//    var options = {
+//        username: 'mrleo',
+//        password: 'woainict99'
+//    };
+//
+//    return gulp.src(config.appPath + "/*.html")
+//        .pipe(upyunDest(folderOnUpyun, options))
+//
+//});
+
 
 //上传七牛替换远程cdn
 //gulp.task('qn', gulp.series('push-qn', 'qn-cdn'));
 
 // cdn路径替换
-gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger-cdn'));
+gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger', 'cdn-html', 'cdn-css'));
 
 //生成dist任务
 gulp.task('dist', gulp.series('del', 'copy', 'images', 'js-css-merger'));//生成dist目录
 
 //默认任务
-gulp.task('default', gulp.parallel('watch', 'less')); //定义默认任务
-
+gulp.task('default', gulp.series('watch', 'less')); //定义默认任务
