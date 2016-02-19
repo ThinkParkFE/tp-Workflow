@@ -8,7 +8,6 @@ var gulp = require('gulp'),
     less = require('gulp-less'),
     htmlmin = require('gulp-htmlmin'),
     uglify = require('gulp-uglify'),
-    concat = require('gulp-concat'),
     minifyCss = require('gulp-minify-css'),
     livereload = require('gulp-livereload'),
     copy = require('gulp-copy'),
@@ -67,25 +66,28 @@ gulp.task('images', function () {
 
 
 //监控任务
+
 gulp.task('watch', function () {
-    livereload.listen();
+    //livereload.listen();
     gulp.watch(config.appPath + '/**/*.*', function (event) {
         livereload.changed(event.path);
     });
     gulp.watch(config.less, gulp.series('less'));
 });
 
-
 //编译less
 gulp.task('less', function () {
-    return gulp.src(config.less).
-    pipe(sourcemaps.init()).//生成maps文件
-    pipe(pi.less()).//编译less
-    pipe(postcss([autoprefixer({browsers: ["> 0%"]})])).//自动添加浏览器前缀
-    pipe(sourcemaps.write('.')).//生成maps文件目录
-    pipe(gulp.dest(config.cssPath)).//生成的css目录
-    pipe(pi.livereload());//浏览器自动刷新
-
+    return gulp.src(config.less)
+        .pipe(sourcemaps.init())//生成maps文件
+        .pipe(pi.less())//编译less
+        .pipe(autoprefixer({
+            browsers: ['last 2 versions'],
+            cascade: false
+        }))
+        //.pipe(postcss([autoprefixer({browsers: ["> 0%"]})]))//自动添加浏览器前缀
+        .pipe(sourcemaps.write('.'))//生成maps文件目录
+        .pipe(gulp.dest(config.cssPath))//生成的css目录
+        .pipe(pi.livereload());//浏览器自动刷新
 });
 
 
@@ -234,13 +236,14 @@ gulp.task('qn-cdn', function () {
 
 
 //上传七牛替换远程cdn
-gulp.task('qn', gulp.series('push-qn', 'qn-cdn'));
+//gulp.task('qn', gulp.series('push-qn', 'qn-cdn'));
 
 // cdn路径替换
-gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger-cdn', 'cdn'));
+gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger-cdn'));
 
 //生成dist任务
 gulp.task('dist', gulp.series('del', 'copy', 'images', 'js-css-merger'));//生成dist目录
 
 //默认任务
-gulp.task('default', gulp.parallel('less', 'watch')); //定义默认任务
+gulp.task('default', gulp.parallel('watch', 'less')); //定义默认任务
+
