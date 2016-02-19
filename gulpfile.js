@@ -1,6 +1,6 @@
 /*
  *
- * authors by 储涛 on 15/12/7
+ * authors by 储涛 on 15/12/7.
  */
 
 //引入插件
@@ -23,7 +23,6 @@ var gulp = require('gulp'),
     autoprefixer = require('gulp-autoprefixer'),
     revReplace = require('gulp-rev-replace'),
     qn = require('gulp-qn'),
-    upyunDest = require('gulp-upyun').upyunSrc,
     pi = require('gulp-load-plugins')(),
     rev = require('gulp-rev');
 
@@ -38,7 +37,7 @@ var config = {
     qnimages: 'dist/assets/images/*.**',
     qnaduio: 'dist/assets/audio/*.mp3',
     qnmedia: 'dist/assets/media/*.mp4',
-    cdn: 'http://images.menma.me/yxh.realty.menma.me/microloushu/assets/'
+    cdn: 'http://images.menma.me/yxh.realty.menma.me/microloushu/'
 };
 
 
@@ -217,6 +216,7 @@ gulp.task('push-qn', function () {
         }))
 });
 
+
 //替换静态cdn
 gulp.task('qn-cdn', function () {
 
@@ -232,50 +232,12 @@ gulp.task('qn-cdn', function () {
         .pipe(gulp.dest(config.distPath + "/"))
 });
 
-//cdn加速
-gulp.task('cdn-html', function () {
-    return gulp.src([
-            config.distPath + "*.html"
-        ])
-        .pipe(cdn({
-            domain: "assets/",
-            cdn: config.cdn
-        }))
-        .pipe(gulp.dest(config.distPath + "/"))
-});
-
-
-gulp.task('cdn-css', function () {
-    return gulp.src([
-            config.distPath + "assets/styles/*.css"
-        ])
-        .pipe(cdn({
-            domain: "../images/",
-            cdn: config.cdn
-        }))
-        .pipe(gulp.dest(config.distPath + "assets/styles/"))
-});
-
-
-//gulp.task('upyun-upload', function () {
-//
-//    var folderOnUpyun = 'test/';
-//    var options = {
-//        username: 'mrleo',
-//        password: 'woainict99'
-//    };
-//
-//    return gulp.src(config.appPath + "/*.html")
-//        .pipe(upyunDest(folderOnUpyun, options))
-//
-//});
-
 
 //上传七牛替换远程cdn
-//gulp.task('qn', gulp.series('push-qn', 'qn-cdn'));
+gulp.task('qn', gulp.series('push-qn', 'qn-cdn'));
 
 // cdn路径替换
-gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger', 'cdn-html', 'cdn-css'));
+gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger-cdn', 'cdn'));
 
 //生成dist任务
 gulp.task('dist', gulp.series('del', 'copy', 'images', 'js-css-merger'));//生成dist目录
