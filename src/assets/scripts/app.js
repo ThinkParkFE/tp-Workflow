@@ -20,6 +20,9 @@ $(function () {
         imgUrl: "http://www.socialpark.com.cn/favicon.ico"
     });
 
+
+
+    //2016
     //tp.tongji(");
 
 });

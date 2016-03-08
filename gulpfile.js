@@ -1,6 +1,7 @@
 /*
  *
  * authors by 储涛 on 15/12/7
+ * version 1.1.1
  */
 
 //引入插件
@@ -21,8 +22,6 @@ var gulp = require('gulp'),
     sourcemaps = require('gulp-sourcemaps'),
     autoprefixer = require('autoprefixer'),
     revReplace = require('gulp-rev-replace'),
-    qn = require('gulp-qn'),
-    upyunDest = require('gulp-upyun').upyunSrc,
     pi = require('gulp-load-plugins')(),
     rev = require('gulp-rev');
 
@@ -32,12 +31,7 @@ var config = {
     appPath: 'src/',
     less: 'src/assets/less/*.less',
     cssPath: 'src/assets/styles/',
-    qncss: 'dist/assets/styles/*.css',
-    qnjs: 'dist/assets/scripts/*.js',
-    qnimages: 'dist/assets/images/*.**',
-    qnaduio: 'dist/assets/audio/*.mp3',
-    qnmedia: 'dist/assets/media/*.mp4',
-    cdn: 'http://images.menma.me/yxh.realty.menma.me/microloushu/assets/'
+    origin: 'http://images.menma.me/yxh.realty.menma.me/microloushu/assets/'
 };
 
 
@@ -46,12 +40,6 @@ gulp.task('del', function () {
     return del([config.distPath]);
 });
 
-
-//文件拷贝
-gulp.task('copy', function () {
-    return gulp.src(config.appPath + 'favicon.ico')
-        .pipe(gulp.dest(config.distPath + '/'));
-});
 
 //图片压缩
 gulp.task('images', function () {
@@ -65,15 +53,27 @@ gulp.task('images', function () {
 });
 
 
+//文件拷贝
+gulp.task('copy', function () {
+    return gulp.src([
+            config.appPath + '/favicon.ico',
+            //config.appPath + '/assets/fonts/*.ttf',
+            //config.appPath + '/assets/audio/*.mp3',
+            //config.appPath + '/libs/**/*.*'
+        ], {base: config.appPath + '/'})
+        .pipe(gulp.dest(config.distPath + '/'));
+});
+
+
 //监控任务
 gulp.task('watch', function () {
-    //pi.livereload.listen();
-    gulp.watch(config.appPath + '/**/*.*', function (event) {
+    pi.livereload.listen();
+    //gulp.watch(config.appPath + '/**/*.*', function (event) {
+    gulp.watch(config.appPath + 'assets/less/*.less', function (event) {
         livereload.changed(event.path);
     });
     gulp.watch(config.less, gulp.series('less'));
 });
-
 
 
 //编译less
@@ -136,100 +136,6 @@ gulp.task('js-css-merger', function () {
 });
 
 
-//cdn 任务
-gulp.task('js-css-merger-cdn', function () {
-
-    var options = {
-        removeComments: true,//清除HTML注释
-        collapseWhitespace: true,//压缩HTML
-        collapseBooleanAttributes: true,//省略布尔属性的值
-        removeEmptyAttributes: true,//删除所有空格作属性值
-        removeScriptTypeAttributes: true,//删除<script>的type="text/javascript"
-        removeStyleLinkTypeAttributes: true,//删除<style>和<link>的type="text/css"
-        minifyJS: false,//压缩页面JS
-        minifyCSS: false//压缩页面CSS
-    };
-
-    return gulp.src(config.appPath + '/test.html')
-
-        .pipe(useref({
-            cdnjs: function (a, b) {
-                return '<script src="' + b + '"></script>';
-
-            },
-            cdncss: function (a, b) {
-
-                return '<link  rel="stylesheet" href="' + b + '">';
-
-            },
-            transformPath: function (filePath) {
-                console.log(filePath);
-                var _filePath = filePath.split("?")
-                if (_filePath.length > 1) {
-                    return _filePath[0];
-                }
-                return filePath;
-            }
-        }))
-
-        .pipe(gulpif('*.js', uglify()))
-        .pipe(gulpif('*.js', rev()))
-        .pipe(gulpif('*.css', rev()))
-        .pipe(gulpif('*.css', minifyCss({
-            compatibility: "ie8,ie9,+selectors.ie7Hack,+properties.zeroUnits,+properties.urlQuotes,+properties.iePrefixHack"
-        })))
-        .pipe(gulpif('test.html', htmlmin(options)))
-        .pipe(revReplace())
-        .pipe(gulp.dest(config.distPath))
-});
-
-var qiniu = "";
-
-
-//上传至七牛
-gulp.task('push-qn', function () {
-
-    qiniu = {
-        accessKey: '5URrS0k6NPfCuHyrXkPO9d2JnJpJvWd39kwQkShj',
-        secretKey: '8lTSOgmvBNe8kaBo_8ngBLdGYyPvqcilfBN42MB9',
-        bucket: 'test',
-        origin: 'http://7xqypv.com1.z0.glb.clouddn.com'
-    };
-
-    return gulp.src([
-            config.qncss,
-            config.qnjs,
-            config.qnimages,
-            config.qnaduio,
-            config.qnmedia
-        ])
-
-        .pipe(qn({
-            qiniu: qiniu
-            //prefix: 'test'
-        }))
-
-        .pipe(cdn({
-            domain: "assets/styles/",
-            cdn: qiniu.origin
-        }))
-});
-
-//替换静态cdn
-gulp.task('qn-cdn', function () {
-
-    return gulp.src(config.distPath + [
-                '*.html'
-            ])
-
-        .pipe(cdn({
-            domain: "assets",
-            cdn: qiniu.origin
-        }))
-
-        .pipe(gulp.dest(config.distPath + "/"))
-});
-
 //cdn加速
 gulp.task('cdn-html', function () {
     return gulp.src([
@@ -237,43 +143,14 @@ gulp.task('cdn-html', function () {
         ])
         .pipe(cdn({
             domain: "assets/",
-            cdn: config.cdn
+            cdn: config.origin
         }))
         .pipe(gulp.dest(config.distPath + "/"))
 });
 
 
-gulp.task('cdn-css', function () {
-    return gulp.src([
-            config.distPath + "assets/styles/*.css"
-        ])
-        .pipe(cdn({
-            domain: "../images/",
-            cdn: config.cdn
-        }))
-        .pipe(gulp.dest(config.distPath + "assets/styles/"))
-});
-
-
-//gulp.task('upyun-upload', function () {
-//
-//    var folderOnUpyun = 'test/';
-//    var options = {
-//        username: 'mrleo',
-//        password: 'woainict99'
-//    };
-//
-//    return gulp.src(config.appPath + "/*.html")
-//        .pipe(upyunDest(folderOnUpyun, options))
-//
-//});
-
-
-//上传七牛替换远程cdn
-//gulp.task('qn', gulp.series('push-qn', 'qn-cdn'));
-
 // cdn路径替换
-gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger', 'cdn-html', 'cdn-css'));
+gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger', 'cdn-html'));
 
 //生成dist任务
 gulp.task('dist', gulp.series('del', 'copy', 'images', 'js-css-merger'));//生成dist目录
