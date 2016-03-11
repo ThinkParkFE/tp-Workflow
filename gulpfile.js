@@ -1,7 +1,7 @@
 /*
  *
  * authors by 储涛 on 15/12/7
- * version 1.1.1
+ * version 1.1.3
  */
 
 //引入插件
@@ -102,7 +102,10 @@ gulp.task('js-css-merger', function () {
         minifyCSS: false//压缩页面CSS
     };
 
-    return gulp.src(config.appPath + '/*.html')
+    return gulp.src([
+            config.appPath + '/*.html',
+
+        ], {base: config.appPath + '/'})
 
         .pipe(useref({
             cdnjs: function (a, b) {
