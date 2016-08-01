@@ -1,8 +1,8 @@
 {
-  "name": "",
+  "name": "tp-workflow",
   "version": "0.0.0",
   "authors": [
-    "何军 <www@webx32.com>"
+    "chutao <chutao97@gmail.com>"
   ],
   "license": "none",
   "ignore": [
