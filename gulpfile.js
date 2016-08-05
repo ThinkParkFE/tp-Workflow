@@ -26,8 +26,11 @@ var gulp = require('gulp'),
     spriter = require('gulp-css-spriter'),
     pxtorem = require('gulp-pxtorem'),
     webpCss = require('gulp-webp-css'),
-    webp = require('gulp-webp');
-
+    webp = require('gulp-webp'),
+    replace = require('gulp-replace-task'),//对文件中的字符串进行替换
+    transport = require("gulp-seajs-transport"),//对seajs的模块进行预处理：添加模块标识
+    concat = require("gulp-seajs-concat"),//seajs模块合并
+    merge = require('merge-stream');//合并多个流
 
 
 //默认配置
@@ -49,7 +52,6 @@ gulp.task('sprites', function () {
         }))
         .pipe(gulp.dest(config.dist));
 });
-
 
 
 //生成webp文件
@@ -127,6 +129,45 @@ gulp.task('less', function () {
         .pipe(pi.livereload());
 });
 
+
+//seajs合并模式
+gulp.task("seajs", function () {
+    return merge(
+        gulp.src(config.appPath + '/assets/scripts/*.js', {base: config.appPath + '/assets/js'})
+        // gulp.src(src + '/assets/js/*.js')
+            .pipe(transport())
+            .pipe(concat({
+                base: config.appPath + '/assets/scripts'
+            }))
+            // .pipe(replace({
+            //     patterns: replace_patterns
+            // }))
+            .pipe(gulp.dest(config.distPath + '/assets/scripts'))
+    );
+});
+
+
+gulp.task('script_uglify', function (cb) {
+
+    return gulp.src([config.distPath + '/assets/scripts/*.js'
+    ], {base: config.distPath + '/assets/scripts'})
+    // .pipe(uglify({
+    //     mangle: {
+    //         except: ['require', 'exports', 'module']//这几个变量不能压缩混淆，否则会引发seajs的一些意外问题
+    //     }
+    // }))
+
+        .pipe(gulpif('*.js', uglify({
+            mangle: {
+                except: ['require', 'exports', 'module']//这几个变量不能压缩混淆，否则会引发seajs的一些意外问题
+            }
+        })))
+
+        .pipe(gulpif('*.js', rev()))
+        .pipe(gulp.dest(config.distPath + '/js-tmp/'));
+});
+
+
 //文件合并压缩
 gulp.task('js-css-merger', function () {
 
@@ -172,6 +213,17 @@ gulp.task('js-css-merger', function () {
         .pipe(gulpif('*.html', htmlmin(options)))
         .pipe(revReplace())
         .pipe(gulp.dest(config.distPath))
+
+
+    // return gulp.src([config.distPath + '/assets/js/*.js'], {base: config.distPath + '/assets/js'})
+    //     .pipe(uglify({
+    //         mangle: {
+    //             except: ['require', 'exports', 'module']//这几个变量不能压缩混淆，否则会引发seajs的一些意外问题
+    //         }
+    //     }))
+    //
+    //     .pipe(gulp.dest(config.distPath + '/js-tmp/'));
+
 });
 
 
@@ -203,7 +255,7 @@ gulp.task('inline', function () {
 gulp.task('default', gulp.series('watch', 'less')); //定义默认任务
 
 //dist
-gulp.task('dist', gulp.series('del', 'copy', 'js-css-merger', 'pxtorem'));
+gulp.task('dist', gulp.series('del', 'webp','copy','pxtorem','js-css-merger','webpCss'));
 
 
 gulp.task('test-dist', gulp.series('del', 'webp', 'copy', 'pxtorem', 'js-css-merger', 'webpCss'));
