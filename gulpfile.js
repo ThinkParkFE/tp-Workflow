@@ -33,14 +33,15 @@ var gulp = require('gulp'),
     merge = require('merge-stream');//合并多个流
 
 
-//默认配置
-var config = {
-    distPath: 'dist/',
-    appPath: 'src/',
-    less: 'src/assets/less/*.less',
-    cssPath: 'src/assets/style/',
-    origin: ''
-};
+    //默认配置
+    var config = {
+        distPath: 'dist/',
+        appPath: 'src/',
+        less: 'src/assets/less/*.less',
+        cssPath: 'src/assets/style/',
+        origin: '',
+        bower:'../bower_components/'
+    };
 
 
 //生成雪碧图
@@ -52,7 +53,6 @@ gulp.task('sprites', function () {
         }))
         .pipe(gulp.dest(config.dist));
 });
-
 
 //生成webp文件
 gulp.task('webp', function () {
@@ -133,39 +133,38 @@ gulp.task('less', function () {
 //seajs合并模式
 gulp.task("seajs", function () {
     return merge(
-        gulp.src(config.appPath + '/assets/scripts/*.js', {base: config.appPath + '/assets/js'})
-        // gulp.src(src + '/assets/js/*.js')
+        gulp.src([
+            config.appPath + '/assets/scripts/modules/*.js',
+            config.appPath + config.bower+'tp.zepto.requirejs/zepto.min.js'
+
+        ], {base: config.appPath + '/assets/scripts/modules/'})
             .pipe(transport())
-            .pipe(concat({
-                base: config.appPath + '/assets/scripts'
-            }))
+            .pipe(test('app.js'))
+
+
+            // .pipe(concat({
+            //     base: config.appPath + '/assets/scripts',
+            //     alias:{
+            //       'cookie':'../bower_components/tp/js/cookie.js'
+            //     }
+            // }))
+
+
             // .pipe(replace({
             //     patterns: replace_patterns
             // }))
-            .pipe(gulp.dest(config.distPath + '/assets/scripts'))
+
+            .pipe(uglify({
+                mangle: {
+                    except: ['require', 'exports', 'module'],//这几个变量不能压缩混淆，否则会引发seajs的一些意外问题
+                    compress: true //类型boolean 默认为true 是否完全压缩
+                }
+            }))
+
+            .pipe(gulp.dest(config.distPath + '/assets/scripts/modules/'))
     );
 });
 
-
-gulp.task('script_uglify', function (cb) {
-
-    return gulp.src([config.distPath + '/assets/scripts/*.js'
-    ], {base: config.distPath + '/assets/scripts'})
-    // .pipe(uglify({
-    //     mangle: {
-    //         except: ['require', 'exports', 'module']//这几个变量不能压缩混淆，否则会引发seajs的一些意外问题
-    //     }
-    // }))
-
-        .pipe(gulpif('*.js', uglify({
-            mangle: {
-                except: ['require', 'exports', 'module']//这几个变量不能压缩混淆，否则会引发seajs的一些意外问题
-            }
-        })))
-
-        .pipe(gulpif('*.js', rev()))
-        .pipe(gulp.dest(config.distPath + '/js-tmp/'));
-});
 
 
 //文件合并压缩
@@ -252,13 +251,13 @@ gulp.task('inline', function () {
 
 
 //default
-gulp.task('default', gulp.series('watch', 'less')); //定义默认任务
+gulp.task('default', gulp.series('less','watch')); //定义默认任务
 
 //dist
 gulp.task('dist', gulp.series('del', 'webp','copy','pxtorem','js-css-merger','webpCss'));
 
 
-gulp.task('test-dist', gulp.series('del', 'webp', 'copy', 'pxtorem', 'js-css-merger', 'webpCss'));
+gulp.task('test-dist', gulp.series('del', 'copy', 'pxtorem', 'seajs', 'js-css-merger'));
 
 // cdn-dist
 gulp.task('dist-cdn', gulp.series('del', 'copy', 'js-css-merger', 'cdn-html'));
